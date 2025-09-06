@@ -1,84 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { getProjectsByUserId } from '@/lib/mock-data'
+import { prisma } from '@/lib/prisma'
+import { requireAuth, handleApiError, validateRequiredFields, ApiError } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const session = await requireAuth(request)
 
-    const projects = getProjectsByUserId(session.user.id)
+    const projects = await prisma.project.findMany({
+      where: {
+        members: {
+          some: {
+            userId: session.user.id,
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: true,
+          },
+        },
+        _count: {
+          select: {
+            tasks: true,
+            projectDiscussions: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc'
+      }
+    })
 
     return NextResponse.json(projects)
   } catch (error) {
-    console.error('Error fetching projects:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireAuth(request)
+
+    // Ensure user exists in DB
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+    if (!user) {
+      throw new ApiError('User not found in database', 404)
     }
 
-    const { name, description } = await request.json()
+    const data = await request.json()
+    validateRequiredFields(data, ['name'])
 
-    if (!name) {
-      return NextResponse.json(
-        { error: 'Project name is required' },
-        { status: 400 }
-      )
-    }
+    const { name, description } = data
 
-    // For demo purposes, return a mock project
-    const mockProject = {
-      id: `project_${Date.now()}`,
-      name,
-      description: description || '',
-      status: 'ACTIVE',
-      createdById: session.user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      members: [
-        {
-          id: `member_${Date.now()}`,
-          userId: session.user.id,
-          projectId: `project_${Date.now()}`,
-          role: 'OWNER',
-          joinedAt: new Date(),
-          user: {
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.name,
-            image: session.user.image
-          }
-        }
-      ],
-      tasks: [],
-      discussions: [],
-      _count: {
-        tasks: 0,
-        discussions: 0
-      }
-    }
+    const project = await prisma.project.create({
+      data: {
+        name,
+        description,
+        createdById: session.user.id,
+        members: {
+          create: {
+            userId: session.user.id,
+            role: 'OWNER',
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: true,
+          },
+        },
+        _count: {
+          select: {
+            tasks: true,
+            projectDiscussions: true,
+          },
+        },
+      },
+    })
 
-    return NextResponse.json(mockProject, { status: 201 })
+    return NextResponse.json(project, { status: 201 })
   } catch (error) {
-    console.error('Error creating project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
-

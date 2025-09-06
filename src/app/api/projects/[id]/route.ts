@@ -47,7 +47,7 @@ export async function GET(
             createdAt: 'desc'
           }
         },
-        discussions: {
+        projectDiscussions: {
           include: {
             user: true
           },
@@ -124,7 +124,7 @@ export async function PUT(
             createdBy: true
           }
         },
-        discussions: {
+        projectDiscussions: {
           include: {
             user: true
           }

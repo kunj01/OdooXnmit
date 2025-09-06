@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getNotificationsByUserId, getUnreadNotificationsByUserId } from '@/lib/mock-data'
+import { Notification } from '@/types'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,9 +15,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const unreadOnly = searchParams.get('unread') === 'true'
 
-    const notifications = unreadOnly 
-      ? getUnreadNotificationsByUserId(session.user.id)
-      : getNotificationsByUserId(session.user.id)
+    const notifications = await prisma.notification.findMany({
+      where: {
+        userId: session.user.id,
+        read: unreadOnly ? false : undefined,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
 
     return NextResponse.json(notifications)
   } catch (error) {

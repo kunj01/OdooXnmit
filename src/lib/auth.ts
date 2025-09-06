@@ -1,27 +1,7 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-
-// Demo users for testing
-const demoUsers = [
-  {
-    id: 'user1',
-    email: 'john.doe@example.com',
-    name: 'John Doe',
-    password: 'password123'
-  },
-  {
-    id: 'user2',
-    email: 'jane.smith@example.com', 
-    name: 'Jane Smith',
-    password: 'password123'
-  },
-  {
-    id: 'user3',
-    email: 'mike.wilson@example.com',
-    name: 'Mike Wilson', 
-    password: 'password123'
-  }
-]
+import bcrypt from 'bcryptjs'
+import { prisma } from './prisma'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -36,17 +16,32 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = demoUsers.find(u => u.email === credentials.email)
-        
-        if (!user || user.password !== credentials.password) {
-          return null
-        }
+        try {
+          // Find user in database
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          })
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: null,
+          if (!user || !user.password) {
+            return null
+          }
+
+          // Verify password
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password)
+          
+          if (!isValidPassword) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          return null
         }
       }
     })
@@ -54,6 +49,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt'
   },
+  secret: process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/auth/signin',
   },

@@ -85,7 +85,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
           <div className="flex items-center text-sm text-gray-600">
             <MessageSquare className="h-4 w-4 mr-2" />
-            <span>{project.discussions?.length || 0} discussions</span>
+            <span>{project.projectDiscussions?.length || 0} discussions</span>
           </div>
         </div>
 

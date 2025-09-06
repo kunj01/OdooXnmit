@@ -17,7 +17,7 @@ export interface Project {
   createdById: string
   members: ProjectMember[]
   tasks: Task[]
-  discussions: ProjectDiscussion[]
+  projectDiscussions: ProjectDiscussion[]
 }
 
 export interface ProjectMember {
@@ -45,7 +45,7 @@ export interface Task {
   createdBy: User
   assignedTo: User | null
   comments: Comment[]
-  discussions: TaskDiscussion[]
+  taskDiscussions: TaskDiscussion[]
 }
 
 export interface Comment {

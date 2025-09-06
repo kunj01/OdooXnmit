@@ -1,35 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { requireAuth, handleApiError, validateRequiredFields, requireProjectAccess, ApiError } from '@/lib/api-utils'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await requireAuth(request)
     const { id: projectId } = await params
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check if user is member of project
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        members: {
-          some: {
-            userId: session.user.id
-          }
-        }
-      }
-    })
-
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
+    // Check if user has access to project
+    await requireProjectAccess(projectId, session.user.id, prisma)
 
     const tasks = await prisma.task.findMany({
       where: {
@@ -54,11 +36,7 @@ export async function GET(
 
     return NextResponse.json(tasks)
   } catch (error) {
-    console.error('Error fetching tasks:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -67,37 +45,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await requireAuth(request)
     const { id: projectId } = await params
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check if user has access to project
+    await requireProjectAccess(projectId, session.user.id, prisma)
 
-    // Check if user is member of project
-    const project = await prisma.project.findFirst({
-      where: {
-        id: projectId,
-        members: {
-          some: {
-            userId: session.user.id
-          }
-        }
-      }
-    })
+    const data = await request.json()
+    validateRequiredFields(data, ['title'])
 
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
-
-    const { title, description, priority, dueDate, assignedToId } = await request.json()
-
-    if (!title) {
-      return NextResponse.json(
-        { error: 'Task title is required' },
-        { status: 400 }
-      )
-    }
+    const { title, description, priority, dueDate, assignedToId } = data
 
     // If assignedToId is provided, verify the user is a member of the project
     if (assignedToId) {
@@ -109,10 +66,7 @@ export async function POST(
       })
 
       if (!assignedUser) {
-        return NextResponse.json(
-          { error: 'Assigned user is not a member of this project' },
-          { status: 400 }
-        )
+        throw new ApiError('Assigned user is not a member of this project', 400)
       }
     }
 
@@ -151,10 +105,6 @@ export async function POST(
 
     return NextResponse.json(task, { status: 201 })
   } catch (error) {
-    console.error('Error creating task:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

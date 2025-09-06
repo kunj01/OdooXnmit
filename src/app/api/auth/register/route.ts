@@ -13,6 +13,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      )
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters long' },
+        { status: 400 }
+      )
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
@@ -20,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'User already exists with this email' },
         { status: 400 }
       )
     }
@@ -34,11 +51,24 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
       }
     })
 
     return NextResponse.json(
-      { message: 'User created successfully', userId: user.id },
+      { 
+        message: 'User created successfully', 
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        }
+      },
       { status: 201 }
     )
   } catch (error) {

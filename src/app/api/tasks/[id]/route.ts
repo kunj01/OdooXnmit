@@ -46,7 +46,7 @@ export async function GET(
             createdAt: 'asc'
           }
         },
-        discussions: {
+        taskDiscussions: {
           include: {
             user: true
           },
@@ -153,7 +153,7 @@ export async function PUT(
             createdAt: 'asc'
           }
         },
-        discussions: {
+        taskDiscussions: {
           include: {
             user: true
           },
