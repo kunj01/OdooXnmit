@@ -15,7 +15,7 @@ A comprehensive team collaboration platform for project management, task trackin
 
 - **Frontend**: Next.js 15, React 18, TypeScript
 - **Styling**: Tailwind CSS, Radix UI
-- **Database**: SQLite with Prisma ORM
+- **Database**: MongoDB with Prisma ORM
 - **Authentication**: NextAuth.js with JWT
 - **State Management**: TanStack Query (React Query)
 
@@ -23,7 +23,7 @@ A comprehensive team collaboration platform for project management, task trackin
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 20+
 - npm or yarn
 - MongoDB 4.4+ (local installation or MongoDB Atlas)
 
@@ -31,7 +31,7 @@ A comprehensive team collaboration platform for project management, task trackin
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/kunj01/OdooXnmit.git
    cd SynergySphere
    ```
 
@@ -41,7 +41,7 @@ A comprehensive team collaboration platform for project management, task trackin
    ```
 
 3. **Set up MongoDB**
-   
+
    **Option A: Local MongoDB**
    - Install MongoDB Community Server from [mongodb.com](https://www.mongodb.com/try/download/community)
    - Start MongoDB service: `mongod` (or start as Windows service)
@@ -50,15 +50,14 @@ A comprehensive team collaboration platform for project management, task trackin
    **Option B: MongoDB Atlas (Cloud)**
    - Create a free account at [mongodb.com/atlas](https://www.mongodb.com/atlas)
    - Create a new cluster
-   - Get your connection string and update the MONGODB_URI
+   - Get your connection string and update the DATABASE_URL
 
 4. **Set up environment variables**
    Create a `.env` file in the root directory:
    ```env
-   MONGODB_URI="mongodb://127.0.0.1:27017/workspace-event-planner"
+   DATABASE_URL=<your_mongoDB_url>
    NEXTAUTH_URL="http://localhost:5000"
-   JWT_SECRET="workspace-planner-secure-jwt-secret-key-2024"
-   PORT=5000
+   NEXTAUTH_SECRET="synergysphere-secure-jwt-secret-key-2024"
    ```
 
 5. **Set up the database**
@@ -74,14 +73,6 @@ A comprehensive team collaboration platform for project management, task trackin
 
 7. **Open your browser**
    Navigate to [http://localhost:5000](http://localhost:5000)
-
-## Default Users
-
-The database is seeded with the following test users:
-
-- **Email**: john.doe@example.com | **Password**: password123
-- **Email**: jane.smith@example.com | **Password**: password123  
-- **Email**: mike.wilson@example.com | **Password**: password123
 
 ## API Endpoints
 
@@ -128,7 +119,7 @@ src/
 
 ## Database Schema
 
-The application uses a SQLite database with the following main models:
+The application uses a MongoDB database with the following main models:
 
 - **User** - User accounts and authentication
 - **Project** - Project management
@@ -145,7 +136,7 @@ The application uses a SQLite database with the following main models:
 - JWT-based session management
 - Route protection with middleware
 - Input validation and sanitization
-- SQL injection prevention with Prisma
+- NoSQL injection prevention with Prisma
 
 ## Development
 
@@ -161,18 +152,5 @@ The application uses a SQLite database with the following main models:
 
 ### Database Management
 
-- **Reset database**: Delete `dev.db` and run `npm run db:push && npm run db:seed`
 - **View data**: Run `npm run db:studio` to open Prisma Studio
 - **Schema changes**: Modify `prisma/schema.prisma` and run `npm run db:push`
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
